@@ -1,0 +1,29 @@
+		DROP TABLE if exists #homephone;
+
+		WITH homephonefix AS (
+		SELECT distinct 
+		  seq__no
+		, replace(replace(replace(replace(trim([Home__Phone]), '(',''), ') ',''), '-',' '), ' ','') homephone
+		FROM [CMRELATE]
+		WHERE [Home__Phone] not like '%(%' -- 50% do not have the parenthesis, 2k of 4k
+		 AND len(trim([Home__Phone] )) <= 12
+		 AND len(trim([Home__Phone] )) >9
+		 ) 
+		 SELECT 
+		   seq__no
+		 , STUFF(STUFF(STUFF(replace(replace(replace(trim(homephone), '(',''), ')',' '), '-',' '), 7, 0, '-'), 4, 0, ') '), 1, 0, '(') AS homephone
+		 INTO #homephone
+		 FROM homephonefix
+     
+     This takes phone numbers like:
+505 306 5541
+575 799-7722
+575-887-2772
+
+replaces them with:
+(505) 306-5541
+(575) 799-7722
+(575) 887-2772
+
+Then in line to standardize the spacing (double or single between the parantheses, I do this:
+replace(coalesce(replace(hp.homephone,') ',')'), replace(cmr.[Home__Phone], ') ',')')), ')', ') ') [PhoneNumber1]
