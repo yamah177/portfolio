@@ -1,0 +1,40 @@
+SELECt distinct folderPath
+  , replace(folderPath,'filevine-7831/docs/','') Tr
+  , LEFT(replace(folderPath,'filevine-7831/docs/',''), CHARINDEX('/',replace(folderPath,'filevine-7831/docs/',''))) AS Tray
+  , REPLACE(replace(folderPath,'filevine-7831/docs/',''), LEFT(replace(folderPath,'filevine-7831/docs/',''), CHARINDEX('/',replace(folderPath,'filevine-7831/docs/',''))), '') AS GOOD
+  , LEFT(REPLACE(replace(folderPath,'filevine-7831/docs/',''), LEFT(replace(folderPath,'filevine-7831/docs/',''), CHARINDEX('/',replace(folderPath,'filevine-7831/docs/',''))), ''), CHARINDEX('/',REPLACE(replace(folderPath,'filevine-7831/docs/',''), LEFT(replace(folderPath,'filevine-7831/docs/',''), CHARINDEX('/',replace(folderPath,'filevine-7831/docs/',''))), ''))) AS GOODER
+  , CASE 
+	WHEN LEFT(REPLACE(replace(folderPath,'filevine-7831/docs/',''), LEFT(replace(folderPath,'filevine-7831/docs/',''), CHARINDEX('/',replace(folderPath,'filevine-7831/docs/',''))), ''), CHARINDEX('/',REPLACE(replace(folderPath,'filevine-7831/docs/',''), LEFT(replace(folderPath,'filevine-7831/docs/',''), CHARINDEX('/',replace(folderPath,'filevine-7831/docs/',''))), ''))) = ''
+	THEN REPLACE(replace(folderPath,'filevine-7831/docs/',''), LEFT(replace(folderPath,'filevine-7831/docs/',''), CHARINDEX('/',replace(folderPath,'filevine-7831/docs/',''))), '')
+	ELSE LEFT(REPLACE(replace(folderPath,'filevine-7831/docs/',''), LEFT(replace(folderPath,'filevine-7831/docs/',''), CHARINDEX('/',replace(folderPath,'filevine-7831/docs/',''))), ''), CHARINDEX('/',REPLACE(replace(folderPath,'filevine-7831/docs/',''), LEFT(replace(folderPath,'filevine-7831/docs/',''), CHARINDEX('/',replace(folderPath,'filevine-7831/docs/',''))), '')))
+	END AS CLIENTNAME
+	
+FROM [S3DocScan_Client_Import_Files]
+where folderPath not like '%_Closed_%' -- 52788
+
+------------------
+SELECt distinct 
+		FolderPath
+	  , REPLACE(replace(folderPath,'filevine-7831/docs/',''), LEFT(replace(folderPath,'filevine-7831/docs/',''), CHARINDEX('/',replace(folderPath,'filevine-7831/docs/',''))), '') AS GOOD
+	  , LEFT(REPLACE(replace(folderPath,'filevine-7831/docs/',''), LEFT(replace(folderPath,'filevine-7831/docs/',''), CHARINDEX('/',replace(folderPath,'filevine-7831/docs/',''))), ''), CHARINDEX('/',REPLACE(replace(folderPath,'filevine-7831/docs/',''), LEFT(replace(folderPath,'filevine-7831/docs/',''), CHARINDEX('/',replace(folderPath,'filevine-7831/docs/',''))), ''))) AS GOODER
+	  , replace(REPLACE(replace(folderPath,'filevine-7831/docs/',''), LEFT(replace(folderPath,'filevine-7831/docs/',''), CHARINDEX('/',replace(folderPath,'filevine-7831/docs/',''))), '')
+		, LEFT(REPLACE(replace(folderPath,'filevine-7831/docs/',''), LEFT(replace(folderPath,'filevine-7831/docs/',''), CHARINDEX('/',replace(folderPath,'filevine-7831/docs/',''))), ''), CHARINDEX('/',REPLACE(replace(folderPath,'filevine-7831/docs/',''), LEFT(replace(folderPath,'filevine-7831/docs/',''), CHARINDEX('/',replace(folderPath,'filevine-7831/docs/',''))), ''))),'') FIFTH
+	  , LEFT(replace(REPLACE(replace(folderPath,'filevine-7831/docs/',''), LEFT(replace(folderPath,'filevine-7831/docs/',''), CHARINDEX('/',replace(folderPath,'filevine-7831/docs/',''))), '')
+		, LEFT(REPLACE(replace(folderPath,'filevine-7831/docs/',''), LEFT(replace(folderPath,'filevine-7831/docs/',''), CHARINDEX('/',replace(folderPath,'filevine-7831/docs/',''))), ''), CHARINDEX('/',REPLACE(replace(folderPath,'filevine-7831/docs/',''), LEFT(replace(folderPath,'filevine-7831/docs/',''), CHARINDEX('/',replace(folderPath,'filevine-7831/docs/',''))), ''))),'') , CHARINDEX('/',replace(REPLACE(replace(folderPath,'filevine-7831/docs/',''), LEFT(replace(folderPath,'filevine-7831/docs/',''), CHARINDEX('/',replace(folderPath,'filevine-7831/docs/',''))), '')
+		, LEFT(REPLACE(replace(folderPath,'filevine-7831/docs/',''), LEFT(replace(folderPath,'filevine-7831/docs/',''), CHARINDEX('/',replace(folderPath,'filevine-7831/docs/',''))), ''), CHARINDEX('/',REPLACE(replace(folderPath,'filevine-7831/docs/',''), LEFT(replace(folderPath,'filevine-7831/docs/',''), CHARINDEX('/',replace(folderPath,'filevine-7831/docs/',''))), ''))),''))) FIFTHER
+	  
+	  , CASE
+			WHEN LEFT(replace(REPLACE(replace(folderPath,'filevine-7831/docs/',''), LEFT(replace(folderPath,'filevine-7831/docs/',''), CHARINDEX('/',replace(folderPath,'filevine-7831/docs/',''))), '')
+		, LEFT(REPLACE(replace(folderPath,'filevine-7831/docs/',''), LEFT(replace(folderPath,'filevine-7831/docs/',''), CHARINDEX('/',replace(folderPath,'filevine-7831/docs/',''))), ''), CHARINDEX('/',REPLACE(replace(folderPath,'filevine-7831/docs/',''), LEFT(replace(folderPath,'filevine-7831/docs/',''), CHARINDEX('/',replace(folderPath,'filevine-7831/docs/',''))), ''))),'') , CHARINDEX('/',replace(REPLACE(replace(folderPath,'filevine-7831/docs/',''), LEFT(replace(folderPath,'filevine-7831/docs/',''), CHARINDEX('/',replace(folderPath,'filevine-7831/docs/',''))), '')
+		, LEFT(REPLACE(replace(folderPath,'filevine-7831/docs/',''), LEFT(replace(folderPath,'filevine-7831/docs/',''), CHARINDEX('/',replace(folderPath,'filevine-7831/docs/',''))), ''), CHARINDEX('/',REPLACE(replace(folderPath,'filevine-7831/docs/',''), LEFT(replace(folderPath,'filevine-7831/docs/',''), CHARINDEX('/',replace(folderPath,'filevine-7831/docs/',''))), ''))),''))) = ''
+			
+			THEN replace(REPLACE(replace(folderPath,'filevine-7831/docs/',''), LEFT(replace(folderPath,'filevine-7831/docs/',''), CHARINDEX('/',replace(folderPath,'filevine-7831/docs/',''))), '')
+		, LEFT(REPLACE(replace(folderPath,'filevine-7831/docs/',''), LEFT(replace(folderPath,'filevine-7831/docs/',''), CHARINDEX('/',replace(folderPath,'filevine-7831/docs/',''))), ''), CHARINDEX('/',REPLACE(replace(folderPath,'filevine-7831/docs/',''), LEFT(replace(folderPath,'filevine-7831/docs/',''), CHARINDEX('/',replace(folderPath,'filevine-7831/docs/',''))), ''))),'')
+
+		ELSE LEFT(replace(REPLACE(replace(folderPath,'filevine-7831/docs/',''), LEFT(replace(folderPath,'filevine-7831/docs/',''), CHARINDEX('/',replace(folderPath,'filevine-7831/docs/',''))), '')
+		, LEFT(REPLACE(replace(folderPath,'filevine-7831/docs/',''), LEFT(replace(folderPath,'filevine-7831/docs/',''), CHARINDEX('/',replace(folderPath,'filevine-7831/docs/',''))), ''), CHARINDEX('/',REPLACE(replace(folderPath,'filevine-7831/docs/',''), LEFT(replace(folderPath,'filevine-7831/docs/',''), CHARINDEX('/',replace(folderPath,'filevine-7831/docs/',''))), ''))),'') , CHARINDEX('/',replace(REPLACE(replace(folderPath,'filevine-7831/docs/',''), LEFT(replace(folderPath,'filevine-7831/docs/',''), CHARINDEX('/',replace(folderPath,'filevine-7831/docs/',''))), '')
+		, LEFT(REPLACE(replace(folderPath,'filevine-7831/docs/',''), LEFT(replace(folderPath,'filevine-7831/docs/',''), CHARINDEX('/',replace(folderPath,'filevine-7831/docs/',''))), ''), CHARINDEX('/',REPLACE(replace(folderPath,'filevine-7831/docs/',''), LEFT(replace(folderPath,'filevine-7831/docs/',''), CHARINDEX('/',replace(folderPath,'filevine-7831/docs/',''))), ''))),'')))
+		END AS CLIENTNAME
+	  
+	FROM [S3DocScan_Client_Import_Files]
+	where folderPath like '%_Closed_%' -- 52788
