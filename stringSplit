@@ -1,0 +1,41 @@
+USE [<DB>]
+GO
+/****** Object:  UserDefinedFunction [dbo].[udf_GetSplitString]    Script Date: ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+/*
+
+    Added "Set @List = " to replace &, < and > so the this does not error with "XML parsing: line 1, character 1203, illegal name character".
+
+    Test with:
+    select dbo.udf_GetSplitString('Date & Such,Account <ID,Account >Label,Campaign ID,Some % of some',',',1)
+
+    Removed code to replace & < and >. This effects code that joins by name in usp_METAL1_FileToStage1MAIN.
+
+
+*/
+
+ALTER   FUNCTION [dbo].[udf_GetSplitString]
+(
+   @List       VARCHAR(MAX),
+   @Delimiter  VARCHAR(255),
+   @ElementNumber INT
+)
+RETURNS VARCHAR(MAX)
+AS
+BEGIN
+
+       DECLARE @xml XML;
+
+       SET @xml = '<split><el>' + REPLACE(@list,@Delimiter,'</el><el>') + '</el></split>'
+
+       DECLARE @ret VARCHAR(MAX)
+       SET @ret = (SELECT
+              el = split.el.value('.','varchar(max)')
+       FROM  @xml.nodes('/split/el[string-length(.)>0][position() = sql:variable("@elementnumber")]') split(el))
+
+       RETURN @ret
+
+END
