@@ -1,0 +1,185 @@
+Starting a DME project
+Usually what happens first is you get added to a slack channel by your manager, they will make a comment notifying you and may provide some details (docs only, data only, etc).
+While not necessary, I often start by going through the history of the slack channel and seeing who is involved (IC, DMA, etc) and the timeline of events. Note the link and phase will be pinned at the top of the channel.
+In the filevine prod migration project website, I’ll check activity history and maps tab too. In the maps tab you’ll find your map and your alignments.
+GET ADDED TO THE ORG:
+You’ll want to get added to the org in staging and production. Ask the IC to add you as org admin in the Prod environment shard - ask the DMA to add you to the client’s tenant shard (if they’ve tested standards), and an admin collaborator too if you want to see the data on the front end, which I recommend doing from time to time.
+CREATING AN ORG:
+In staging2, you’ll want to make a new org for the test. A Tenant is the top level and houses organizations. Organizations house templates for different types of legal practices, and it is not uncommon for a law firm to have several templates (workers comp, personal injury, etc)
+Hamburger menu -> Admin -> Orgs and click the Green plus sign.
+Give it a good name ([Client Name] Test [X]) - THE ORG NAME MUST INCLUDE THE WORD TEST IN THE FRIENDLY ID (the piece of the URL).  We need to do this as the shard names are shared between Staging 2 and Shard B.
+Example: Oklahoma Legal Services Test 1
+The tenant in staging 2 it’ll be the client's name, often preceded by the orgID.
+To learn more about Staging2, check this card.
+You’ll put your filevine email address (work email) in as the owner.
+EXPORT/IMPORT FILEVINE TEMPLATES:
+The production project (not the migration one) is a custom template the client put together based on their needs. We pull this template down to staging to help us create the batches, tables and sections we need for testing.
+Go to the production filevine project, find your customer, go to the hamburger -> advanced -> customs editor. Search your org and choose any project template, then export all project templates, and download the fvpt file.
+
+Take fvpt into staging (or staging2) advanced – customs editor. Search your org and import fvpt file(s) project templates. Push Save.
+
+Once you import, wait a bit. It’ll take some time for it to load, up to 30-60 minutes before you want to start creating batches in the next step.
+CREATING BATCHES:
+In staging, create batches: Admin -> imports and then find your test case org. You need to create a batch (import table) for every green (and often yellow) tab in you mapping document:
+
+Match the green tabs with this in Filevine staging.
+
+
+RUNNING FULLMIGRATION_PROCESS:
+Sets up local copies of tables, procedures and views in specified db for us to work on.
+Then PT1Proc in fullmigration_process, here’s an example:
+
+EXECUTE FILEVINE_META.PT1.FULL_MIGRATIONPROCESS 
+	@DEBUGFLAG = 0, -- never used
+	@LEGACYDBTYPE = 'unknown', -- check Filevine_META.[dbo].[Legacy_Database] for legacy types and see what production filevine (or the slack channel) says the source system is
+	@LEGACYDB = '8149_Sherman', -- this is the same as the database name usually
+	@PREVIOUSDB = NULL, -- not used on the first run
+	@ORGID = 8149, -- org id comes from top of slack channel
+	@SCHEMANAME = 'dbo',
+	@FVPRODUCTIONPREFIX = '_ShermanTest3_', -- _8133_Setareh_RC_ 
+	@FVPREVIOUSPREFIX = NULL,
+	@IMPORTDATABASENAME = 'FilevineStaging2Import', -- 'FilevineStagingImport'
+	@EXECUTIONDB = 'Filevine_META', -- don’t change
+	@USEGENERICTEMPLATE = 0,
+	@TIMEZONE = 'central';
+--	@REFRESHPROCS = 0; -- optional and loaded gun. set to 1, then bad deal, overwrite with empty. 
+-----------------------------------------
+Make sure legacy database type matches an entry here to run, or you will need to add it.
+select *
+FROM Filevine_META.[dbo].[Legacy_Database]
+order by 2 asc
+If it’s a docs onlymigration, the put @LEGACYDBTYPE = 'Documents',
+    	@FVPRODUCTIONPREFIX = '_OklahomaLegalService_', -- _8133_Setareh_RC_ used to do that find and replace. now we have synonym and it updates that to be new prefix. Makes it easier to not track the mispelled prefix etc. easier to write generic templates.
+Once FMP has been ran then your sprocs are made and you start going through the map and figuring out how the data looks, plugging stuff in. 
+ADDING THE DUMMY USER, IC AND DMA:
+When doing documents, notes, and projects you’ll need a dummy user for the tests
+datamigrationteam@filevine.com
+In Staging 2 go here, Admin -> Orgs - Search your org and grab the tenant name
+
+Open a new tab of staging 2 and put the tenant key in the place of staging2.
+Example https://staging2.fvmigration.com -> https://robinsonassociates.fvmigration.com
+In the tenant org you’ll go to Setup -> Orgs -> Find your Test 1 Org -> Members tab -> invite user - > datamigrationteam@filevine.com - > Invite.
+
+It’s gonna give you something like this: @datamigrationteam19 but you only want to take datamigrationteam19 and use that as the author of your notes. You’ll use it in docs as the [UploadedByUsername] and [Username] in project scripts.
+
+Make sure you add your IC and DMA to the test org too as Org Admin and Admin-collab.
+SCRIPTING:
+Most likely you will start with the clientcasemap sproc which is mostly for our own use to make other sprocs easier later. 
+Once the Client Case Map is done you want to focus on
+Contacts
+Projects
+ProjectContacts
+Everything else in any order
+It is VITAL that contacts (Contactexternalid/CEID) and projects (Projectexternalid/PEID) match up exactly with every other sproc, you’ll want to make sure everything ties out before moving forward or you will run into problems when importing test 1 into Filevine. 
+You can verify and see how many rows will fall out once you get contacts and projects loaded. Use a query like this:
+SELECT *
+FROM PT1.projects
+WHERE contactexternalid not in (SELECT contactexternalid 
+			FROM PT1.Contacts)
+Run with IN and NOT IN to see what isn’t matching and what is.
+CREATING IMPORT BATCHES: 
+USP_LOAD_STAGING_TO_IMPORT:
+When the test is ready to get imported into Filevine, you’ll run this to take data from your local tables into the import tables
+Import into FV:
+
+Useful queries for watching your imports:
+SELECT count(*), __importstatus
+	FROM 		FilevineStaging2Import.._ShermanTest3a_Documents___3705
+	group by __importstatus
+	order by 1 desc
+
+	SELECt count(*), __ErrorMessage
+	FROM 		FilevineStaging2Import.._ShermanTest3a_Documents___3705
+	group by __ErrorMessage
+	order by 1 desc
+IMPORTING DATA INTO A TEST: 
+Automatic way
+EXEC FILEVINE_META.DBO.USP_LOAD_STAGING_TO_IMPORT 
+	@DEBUGFLAG = 0,
+	@IMPORTSERVER = 'FilevineStaging2Import',
+	@LEGACYDB = '8298_Robinson_R1',
+	@FVPRODUCTIONPREFIX = '_RobinsonTest1_',
+	@PEIDLIST = '', -- never used
+	@TRUNCATETABLES = 0; -- everybody runs it off (0). 
+Manual way
+You can also import manually by swapping out the pt1 table for the batch import table and then running the insert statement:
+[FilevineStaging2Import].[dbo].[_8298_Robinson_RC_V2_Contacts___3248]
+This is not the preferred way but makes sense at times, especially when you find that you missed a few records and need to import a second batch of data for a section.
+IMPORT STATUSES:
+To be loaded into FV the __importstatus has to be 40. 
+Records being imported will get a status of 50 and are being actively imported/processed in that moment.
+If it imports successfully you will get status 60
+Status 70 is a failure and those records will potentially need updated and reprocessed in this import table or a new one.
+Priority: In Admin -> Imports:
+
+
+
+
+You can see the priority. Contacts must go in first, priority is 100.
+Projects goes in second with priority 200.
+ProjectContacts has a priority of 250, I run it next.
+Everything else gets priority 300 and can be ran in any order.
+Import Queue:
+
+Hover over each image to look at import batches queued but not started, in process or completed.
+
+It’s useful to narrow down to your selected org sometimes instead of looking at everyone else’s imports mixed with yours. You can also filter it by day, and use the refresh button.
+You can see in the image above that something went wrong with my most recent import. 
+Back in the Edit Batches Tab I can see my job shows system error (used to be paused)
+
+The error messages will be shown in the slack channel #importalerts-staging2 or #importalerts
+These channels can be noisy so many people mute them, but if your import keeps pausing every time you run it, then you are filling up this channel with errors.
+
+The issue with this one is it’s a collection item, so I need to uniqify the [CollectionItemExternalID] which needs to get a _1 since I’ve already loaded this section with a bunch of errors once before
+Useful links:
+- Sql-format.com
+Finding values and column names in a database:
+[dbo].[VW_TABLE_SOURCE_ANALYSIS_VALUE_REPORT]
+System Errors
+
+importalerts (might only be applicable to Canada, since we don't really have ShardA/Staging1 clients anymore)
+#importalerts-staging2
+#importalerts-shardb
+#importalerts-shardc
+
+UPDATE import tables for rerunning failing records:
+Coming soon.
+
+Template swaps:
+Coming soon
+
+MAKE A TENANT:
+Use and underscore between org_id and name of the org
+
+DOCUMENT YOUR TEST:
+In the migration tracker project on old production, go to the test section, put the date you loaded the test in. You will do this for each and every test, along with the name of the org.
+
+
+
+TEST REVIEW WITH CLIENT:
+Once a test has been loaded and is ready for review, update the slack channel and set your project phase in the migration tracker to Client Review - Test. Work with the IC to set up a time to review the test.
+Prior to meeting with the client, make sure to add the client to the test, along with the IC as org admin.
+Use their email address toHamburger menu - setup - orgs -> Choose your org and then go to the members tab -> invite staff button on the right.
+ add them. If this is a test 2 or 3, remove the client from the previous test to avoid confusion (they will see dupes, etc). 
+
+Tips for a smooth test review
+Never let a client know that you are new. It’s okay to say you don’t know or that you need to check some code if they ask about something.
+Have your screens set up prior to the meeting. Here’s what I do with my 3 screens:
+I use one for OneNote to take notes on and split screen with Slack
+The second screen has SSMS to run queries quickly, good to have your contacts, project import table ready
+
+IF YOU OVERWRITE A SPROC:
+Filevine_Meta.dbo.Production_Code_History
+USE [Filevine_META]
+GO
+SELECT [databasename]
+      ,[schemaname]
+      ,[objectname]
+      ,[commandtext]
+  FROM [dbo].[Production_Code_History]
+  where [eventtype] like '%alter%'
+  and schemaname like  '%ADERANT%'
+  and objectname like '%note%'
+  and databasename not like '%sandbox%'
+order by databasename desc
+  GO
